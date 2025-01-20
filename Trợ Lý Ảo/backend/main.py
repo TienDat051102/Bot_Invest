@@ -1,6 +1,6 @@
 from openai import OpenAI
 import uuid
-from db import save_message, get_conversation, get_training_data,get_conversation_context,get_jobversion
+from db import save_message, get_conversation, get_training_data,get_conversation_context,get_jobversion,save_data_faq
 from collections import deque
 
 # Kết nối OpenAI
@@ -22,8 +22,15 @@ def start(conversation_id):
     return messages
 def save_faq():
     faq = get_jobversion(jobversion)
-    print('jobversion',jobversion)
     print('faq',faq)
+    for entry in faq:
+        if entry['type'] == 'question':
+            question = entry['content']
+            conversation_id = entry['conversation_id']
+            timestamp = entry['timestamp']
+        elif entry['type'] == 'answer':
+            answer = entry['content']
+            save_data_faq(question, answer, conversation_id, timestamp)
 
 def start_conversation():
     print("Chào bạn! Hãy chọn ngữ cảnh bạn muốn làm việc:")
@@ -49,7 +56,6 @@ category = start_conversation()
 conversation_id = get_conversation_context(category)
 
 messages = deque(start(conversation_id))
-print('messages',messages)
 print(f"AI Bot đã sẵn sàng! Ngữ cảnh hiện tại: {category}. Gõ 'exit' để thoát.\n")
 
 while True:
@@ -59,8 +65,8 @@ while True:
         break
     if(user_input.lower()== "save"):
         save_faq()
+        print("Tạm biệt!")
         break
-        
     messages.append({"role": "user", "content": user_input})
     save_message(conversation_id, "user", user_input,jobversion)
 

@@ -34,7 +34,7 @@ def get_conversation_context(context_choice):
         print(f"Lỗi khi truy vấn dữ liệu ngữ cảnh: {e}")
         return None
 
-
+# Hàm lưu thông tin nhắn hỏi
 def save_message(conversation_id, role, message,jobversion):  
     with conn.cursor() as cursor:
         if role == "user":
@@ -51,7 +51,7 @@ def save_message(conversation_id, role, message,jobversion):
             (1, message, response_value, conversation_id,jobversion)  
         )
     conn.commit()
-
+#Hàm lấy dữ 
 def get_conversation(conversation_id):
     cursor.execute(
         """
@@ -84,14 +84,27 @@ def get_jobversion(jobversion):
     history = cursor.fetchall()
     messages = []
     for row in history:
-        message, response, conversation_id, timestamp = row
-        if response =='N/A':
-            messages.append({"type": "question", "content": message,"conversation_id":conversation_id,"timestamp":timestamp})
+        message = row['message']
+        response = row['response']
+        conversation_id = row['conversation_id']
+        timestamp = row['timestamp']
+        
+        if response == 'N/A':
+            messages.append({"type": "question", "content": message, "conversation_id": conversation_id, "timestamp": timestamp})
         elif response == 'Bot':
-            messages.append({"type": "answer", "content": message,"conversation_id":conversation_id,"timestamp":timestamp})
-    print('messages',messages)
+            messages.append({"type": "answer", "content": message, "conversation_id": conversation_id, "timestamp": timestamp})
     return messages
 
+def save_data_faq(question, answer,conversation_id, timestamp):
+    with conn.cursor() as cursor:
+        cursor.execute(
+            """
+            insert into faq (question,answer,conversation_id,timestamp)
+            VALUES (%s, %s, %s, %s);
+            """,
+            ( question, answer, conversation_id,timestamp)  
+        )
+    conn.commit()
 def get_training_data():
     try:
         query = "SELECT input, output FROM training_data"
