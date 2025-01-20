@@ -35,7 +35,7 @@ def get_conversation_context(context_choice):
         return None
 
 
-def save_message(conversation_id, role, message):  
+def save_message(conversation_id, role, message,jobversion):  
     with conn.cursor() as cursor:
         if role == "user":
             response_value = "N/A"  
@@ -45,21 +45,20 @@ def save_message(conversation_id, role, message):
             response_value = "Unknown"
         cursor.execute(
             """
-            INSERT INTO activity_log (user_id, message, response, conversation_id, timestamp)
-            VALUES (%s, %s, %s, %s, NOW());
+            INSERT INTO activity_log (user_id, message, response, conversation_id, timestamp,jobversion)
+            VALUES (%s, %s, %s, %s, NOW(),%s);
             """,
-            (1, message, response_value, conversation_id)  
+            (1, message, response_value, conversation_id,jobversion)  
         )
     conn.commit()
 
 def get_conversation(conversation_id):
     cursor.execute(
         """
-        SELECT message AS user_message, response AS bot_response
-        FROM activity_log
+        SELECT question AS user_message, answer AS bot_response
+        FROM faq
         WHERE conversation_id = %s
-        ORDER BY timestamp DESC
-        LIMIT 10;
+ 	ORDER BY timestamp DESC
         """,
         (conversation_id,)
     )
@@ -74,6 +73,24 @@ def get_conversation(conversation_id):
     
     return messages
 
+def get_jobversion(jobversion):
+    cursor.execute(
+        """
+       Select message,response,conversation_id,timestamp from activity_log where jobversion = %s
+ 	ORDER BY timestamp ASC;
+        """,
+        (jobversion,)
+    ) 
+    history = cursor.fetchall()
+    messages = []
+    for row in history:
+        message, response, conversation_id, timestamp = row
+        if response =='N/A':
+            messages.append({"type": "question", "content": message,"conversation_id":conversation_id,"timestamp":timestamp})
+        elif response == 'Bot':
+            messages.append({"type": "answer", "content": message,"conversation_id":conversation_id,"timestamp":timestamp})
+    print('messages',messages)
+    return messages
 
 def get_training_data():
     try:
