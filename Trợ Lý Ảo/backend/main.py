@@ -1,5 +1,6 @@
 from openai import OpenAI
-from db import save_message, get_conversation, get_training_data,get_conversation_context
+import uuid
+from db import save_message, get_conversation, get_training_data,get_conversation_context,get_jobversion
 from collections import deque
 
 # Kết nối OpenAI
@@ -7,19 +8,22 @@ client = OpenAI(
     base_url="http://localhost:11434/v1",
     api_key="ollama"
 )
-
+jobversion = str(uuid.uuid4())
 def start(conversation_id):
     messages = []
     
-    training = get_training_data()[-10:]
+    training = get_training_data()
     for item in training:
         messages.append(item)
     
-    conversation = get_conversation(conversation_id)[-10:]
+    conversation = get_conversation(conversation_id)
     messages.extend(conversation)
     
-    return messages[-20:]
-
+    return messages
+def save_faq():
+    faq = get_jobversion(jobversion)
+    print('jobversion',jobversion)
+    print('faq',faq)
 
 def start_conversation():
     print("Chào bạn! Hãy chọn ngữ cảnh bạn muốn làm việc:")
@@ -44,7 +48,8 @@ def start_conversation():
 category = start_conversation()
 conversation_id = get_conversation_context(category)
 
-messages = deque(start(conversation_id), maxlen=20)
+messages = deque(start(conversation_id))
+print('messages',messages)
 print(f"AI Bot đã sẵn sàng! Ngữ cảnh hiện tại: {category}. Gõ 'exit' để thoát.\n")
 
 while True:
@@ -52,9 +57,12 @@ while True:
     if user_input.lower() == "exit":
         print("Tạm biệt!")
         break
-
+    if(user_input.lower()== "save"):
+        save_faq()
+        break
+        
     messages.append({"role": "user", "content": user_input})
-    save_message(conversation_id, "user", user_input)
+    save_message(conversation_id, "user", user_input,jobversion)
 
 
     try:
@@ -65,7 +73,7 @@ while True:
         reply = response.choices[0].message.content
         
         print(f"Trợ lý riêng : {reply.strip()}")
-        save_message(conversation_id, "assistant", reply.strip())
+        save_message(conversation_id, "assistant", reply.strip(),jobversion)
         messages.append({"role": "assistant", "content": reply.strip()})
     
     except Exception as e:
