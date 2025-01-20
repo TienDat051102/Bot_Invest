@@ -69,14 +69,12 @@ while True:
         break
     messages.append({"role": "user", "content": user_input})
     save_message(conversation_id, "user", user_input,jobversion)
-
-
     try:
         response = client.chat.completions.create(
             model="gemma2:2b",
             messages=list(messages)
         )
-        reply = response.choices[0].message.content
+        reply = " ".join(response.choices[0].message.content.split()).strip()
         
         print(f"Trợ lý riêng : {reply.strip()}")
         save_message(conversation_id, "assistant", reply.strip(),jobversion)
